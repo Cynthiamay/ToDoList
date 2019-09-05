@@ -10,12 +10,23 @@ import UIKit
 
 class TodoListViewController: UITableViewController {
     
+    //criar um código para manter os dados e forma segura "dentro da caixa de areia"
+    let defaults = UserDefaults.standard
+    
     //Definir o que será feito, o que estará na lista
     var itemArray = ["Fazer isso", "Fazer aquilo", "Terminar este"]
     
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
+        // Para recuperar os dados devemos inserir o codigo a seguir:
+        
+        if let items = defaults.array(forKey: "TodoListArray") as? [String]{
+            itemArray = items
+            
+        }
+        
+        
     }
     //MARK - TableView DataSource Methods
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -58,6 +69,7 @@ class TodoListViewController: UITableViewController {
     // MARK - Add New Items
     
     @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
+        
         // Para fazer com que o texto adicionado fique na lista, é preciso criar uma nova variável que esteja fora de uma closure
         var textField = UITextField()
         
@@ -71,6 +83,9 @@ class TodoListViewController: UITableViewController {
             //print("Success!")
             
             self.itemArray.append(textField.text!)
+            
+            //
+            self.defaults.set(self.itemArray, forKey: "TodoListArray")
             
             // código que faz aparecer o que foi digitado na lista
             self.tableView.reloadData()
