@@ -11,7 +11,7 @@ import UIKit
 class TodoListViewController: UITableViewController {
     
     //Definir o que será feito, o que estará na lista
-    let itemArray = ["Fazer isso", "Fazer aquilo", "Terminar este"]
+    var itemArray = ["Fazer isso", "Fazer aquilo", "Terminar este"]
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -55,5 +55,42 @@ class TodoListViewController: UITableViewController {
         tableView.deselectRow(at: indexPath, animated: true)
         
     }
+    // MARK - Add New Items
     
+    @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
+        // Para fazer com que o texto adicionado fique na lista, é preciso criar uma nova variável que esteja fora de uma closure
+        var textField = UITextField()
+        
+        
+        //mostrar uma janela como um pop up para adicionar novo item
+        let alert = UIAlertController (title: "Adicionar Novo To Do", message: "", preferredStyle: .alert)
+        
+        let action = UIAlertAction (title: "Adicionar item", style: .default) { (action) in
+            
+            //o que acontece quando o usuário clica no botão de mais no alerta
+            //print("Success!")
+            
+            self.itemArray.append(textField.text!)
+            
+            // código que faz aparecer o que foi digitado na lista
+            self.tableView.reloadData()
+        
+        }
+        // o codigo serve para colocar um campo de texto no alerta, inserir uma closure é só dar um enter
+        alert.addTextField { (alertTextField) in
+            //vai mostrar em cinza que irá sumir quando clicar no campo de texto
+            alertTextField.placeholder = "Criar novo item"
+            //inserir a variável
+            textField = alertTextField
+        }
+        
+        alert.addAction(action)
+        
+        //mostra o alerta
+        present (alert, animated: true, completion: nil)
+        
+        
+    }
+    
+
 }
