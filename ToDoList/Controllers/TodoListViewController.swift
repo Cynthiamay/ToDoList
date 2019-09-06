@@ -11,34 +11,40 @@ import UIKit
 class TodoListViewController: UITableViewController {
     
     //criar um código para manter os dados e forma segura "dentro da caixa de areia"
-    let defaults = UserDefaults.standard
+    //let defaults = UserDefaults.standard
     
     //Definir o que será feito, o que estará na lista
     var itemArray = [Item]()
+    //outra forma de manter os dados sem ser UserDefault
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        let newItem = Item()
-        newItem.title = "Fazer isso"
-        itemArray.append(newItem)
+        print(dataFilePath)
         
-        let newItem2 = Item()
-        newItem2.title = "Fazer aquilo"
-        itemArray.append(newItem2)
         
-        let newItem3 = Item()
-        newItem3.title = "Fazer isto"
-        itemArray.append(newItem3)
+//        let newItem = Item()
+//        newItem.title = "Fazer isso"
+//        itemArray.append(newItem)
+//
+//        let newItem2 = Item()
+//        newItem2.title = "Fazer aquilo"
+//        itemArray.append(newItem2)
+//
+//        let newItem3 = Item()
+//        newItem3.title = "Fazer isto"
+//        itemArray.append(newItem3)
         
+        loadItems()
         
         // Do any additional setup after loading the view.
         // Para recuperar os dados devemos inserir o codigo a seguir:
         
-        if let items = defaults.array(forKey: "TodoListArray") as? [Item]{
-            itemArray = items
-
-        }
+//        if let items = defaults.array(forKey: "TodoListArray") as? [Item]{
+//            itemArray = items
+//
+//        }
         
         
     }
@@ -80,6 +86,8 @@ class TodoListViewController: UITableViewController {
         
         itemArray[indexPath.row].done = !itemArray[indexPath.row].done
         
+        saveItems()
+        
         //arruma o checkmark, o codigo acima faz a mesma função
 //        if itemArray[indexPath.row].done == false {
 //            itemArray[indexPath.row].done = true
@@ -89,7 +97,7 @@ class TodoListViewController: UITableViewController {
 //            itemArray[indexPath.row].done = false
 //        }
         
-        tableView.reloadData()
+        //tableView.reloadData()
         
         //vai imprimir no console o número da row
         //print(indexPath.row)
@@ -133,14 +141,22 @@ class TodoListViewController: UITableViewController {
             newItem.title = textField.text!
             
             self.itemArray.append(newItem)
-            
-            //
-            self.defaults.set(self.itemArray, forKey: "TodoListArray")
-            
-            // código que faz aparecer o que foi digitado na lista
-            self.tableView.reloadData()
         
-        }
+            //self.defaults.set(self.itemArray, forKey: "TodoListArray")
+            let encoder = PropertyListEncoder()
+        
+            do{
+                let data = try encoder.encode(self.itemArray)
+                try data.write(to: self.dataFilePath!)
+            }catch{
+                print("Error encoding item array, \(error)")
+                
+                
+            }
+            self.tableView.reloadData()
+            
+            self.saveItems()
+            }
         // o codigo serve para colocar um campo de texto no alerta, inserir uma closure é só dar um enter
         alert.addTextField { (alertTextField) in
             //vai mostrar em cinza que irá sumir quando clicar no campo de texto
@@ -156,6 +172,31 @@ class TodoListViewController: UITableViewController {
         
         
     }
+    //MARK - Model Manipulation Methods
     
-
+    func saveItems() {
+        let encoder = PropertyListEncoder()
+        
+        do{
+            let data = try encoder.encode(itemArray)
+            try data.write(to: dataFilePath!)
+        } catch{
+            print("Error encoding item array, \(error)")
+            
+            
+        }
+        self.tableView.reloadData()
+    }
+    func loadItems() {
+        if let data = try? Data (contentsOf: dataFilePath!){
+            let decoder = PropertyListDecoder()
+            do {
+            itemArray = try decoder.decode([Item].self, from: data)
+            }
+            catch {
+                print("Error decoding item Array, \(error)")
+            }
+    }
+      
+}
 }
