@@ -7,13 +7,18 @@
 //
 
 import UIKit
-import CoreData
+import RealmSwift
+import ChameleonFramework
 
-class CategoryTableViewController: UITableViewController {
+
+class CategoryTableViewController: SwipeTableViewController {
     
-    var categories = [Category]()
+    //bad smell
+    let realm = try! Realm()
     
-    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+    var categories: Results<Category>?
+    
+    //let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     
 
     override func viewDidLoad() {
@@ -21,22 +26,42 @@ class CategoryTableViewController: UITableViewController {
         
         loadCategories()
         
+        tableView.separatorStyle = .none
+        
     }
     //MARK: - TableView Datasource Methods
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return categories.count
+        //nil coalescing operator, categories?.count poderia ser nil, se isso ocorrer, o nil coalescing operator vai dizer: Use esse valor no lugar
+        
+        return categories?.count ?? 1
     }
+
     
-    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+    
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell  {
         
-        let cell = tableView.dequeueReusableCell(withIdentifier: "CategoryCell", for: indexPath)
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)
         
-        cell.textLabel?.text = categories[indexPath.row].name
+        if let category = categories?[indexPath.row]{
+            
+            cell.textLabel?.text = category.name
+            
+            
+            guard let categoryColour = UIColor(hexString: category.colour) else {fatalError()}
+            
+            
+            cell.backgroundColor = categoryColour
+            cell.textLabel?.textColor = ContrastColorOf(categoryColour, returnFlat: true)
+        }
+            
         
+
         return cell
-        
+    
     }
+
+
     
     //codigo que faz ir até a TodoListViewController
     //MARK: - TableView Delegate Methods
@@ -52,14 +77,16 @@ class CategoryTableViewController: UITableViewController {
         let destinationVC = segue.destination as! TodoListViewController
         
         if let indexPath = tableView.indexPathForSelectedRow{
-            destinationVC.selectedCategory = categories[indexPath.row]
+            destinationVC.selectedCategory = categories?[indexPath.row]
         }
     }
     
     //MARK: - Data Manipulation Methods
-    func saveCategories() {
+    func save(category : Category) {
         do {
-           try context.save()
+            try realm.write {
+                realm.add(category)
+            }
         }catch {
             print("Error saving category \(error)")
         }
@@ -67,17 +94,34 @@ class CategoryTableViewController: UITableViewController {
     }
     
     func loadCategories() {
+        
+        categories = realm.objects(Category.self)
     
-        let request : NSFetchRequest<Category> = Category.fetchRequest()
-        do{
-            categories = try context.fetch(request)
-        }catch{
-            print("Error loading categories \(error)")
-        }
-        tableView.reloadData()
+//        let request : NSFetchRequest<Category> = Category.fetchRequest()
+//        do{
+//            categories = try context.fetch(request)
+//        }catch{
+//            print("Error loading categories \(error)")
+//        }
+          tableView.reloadData()
 
     }
     
+    //MARK: - Delete Data from Swipe
+    
+    override func updateModel(at indexPath: IndexPath) {
+    
+        
+        if let categoryForDeletion = self.categories?[indexPath.row] {
+            do {
+                try self.realm.write {
+                    self.realm.delete(categoryForDeletion)
+                }
+            }catch{
+                print("Error deleting category, \(error)")
+            }
+        }
+    }
     
     //MARK: - Add New Categories
     
@@ -93,13 +137,16 @@ class CategoryTableViewController: UITableViewController {
         
         let action = UIAlertAction(title: "Add", style: .default) { (action) in
             
-            let newCategory = Category(context: self.context)
+            let newCategory = Category()
             newCategory.name = textField.text!
+            newCategory.colour = UIColor.randomFlat.hexValue()
             
-            self.categories.append(newCategory)
             
-            self.saveCategories()
+            //self.categories.append(newCategory)
             
+            
+            self.save(category: newCategory)
+        
             
             
         }
@@ -114,8 +161,6 @@ class CategoryTableViewController: UITableViewController {
         
     }
     
-    
-    
-
-
 }
+
+
